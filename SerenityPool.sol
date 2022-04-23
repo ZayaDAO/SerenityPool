@@ -14,6 +14,7 @@ contract SerenityPool is Ownable {
     CFAv1Library.InitData public _cfaV1; //initialize cfaV1 variable
 
     ISuperToken public _acceptedToken; // accepted token
+    mapping(address => bool) internal _burn;
 
     constructor(ISuperfluid host, IConstantFlowAgreementV1 cfa, ISuperToken acceptedToken) {
         _host = host;
@@ -31,11 +32,17 @@ contract SerenityPool is Ownable {
     }
 
     // flowrate: wei/second
-    function openStream(address to, int96 flowrate) public {
+    function openStream(address to, int96 flowrate) public notBurned(to){
+        _burn[to]=true;
         _cfaV1.createFlow(to, _acceptedToken, flowrate);
     }
 
     function closeStream(address to) public {
         _cfaV1.deleteFlow(address(this), to, _acceptedToken);
+    }
+
+    modifier notBurned(address to) {
+        require(!_burn[to],"already burned");
+        _;
     }
 }
